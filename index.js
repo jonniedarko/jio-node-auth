@@ -1,11 +1,12 @@
-var redisHelper = require('./auth.redis');
+var config = require('./config');
+var authHelper;
 var tokenHelper = require('./token.util');
 var TIME_TO_LIVE = 60*60*24; //24 hours
 
 /*
 * Middleware to verify the token and store the user data in req._user
 */
-exports.verify = function(req, res, next) {
+function verify(req, res, next) {
 	var headers = req.headers;
 	if (headers == null) return res.send(401);
 
@@ -18,7 +19,7 @@ exports.verify = function(req, res, next) {
 	}
 
 	//Verify it in redis, set data in req._user
-	redisHelper.getDataByToken(token, function(err, data) {
+	authHelper.getDataByToken(token, function(err, data) {
 		if (err) return res.send(401);
 
 		req._user = data;
@@ -31,7 +32,7 @@ exports.verify = function(req, res, next) {
  * Create a new token, stores it in redis with data during ttl time in seconds
  * callback(err, token);
  */
-exports.createAndStoreToken = function(data, ttl, callback) {
+function createAndStoreToken(data, ttl, callback) {
 	data = data || {};
 	ttl = ttl || TIME_TO_LIVE;
 
@@ -41,7 +42,7 @@ exports.createAndStoreToken = function(data, ttl, callback) {
 	tokenHelper.createToken(function(err, token) {
 		if (err) callback(err);
 
-		redisHelper.setTokenWithData(token, data, ttl, function(err, success) {
+		authHelper.setTokenWithData(token, data, ttl, function(err, success) {
 			if (err) callback(err);
 
 			if (success) {
@@ -57,7 +58,7 @@ exports.createAndStoreToken = function(data, ttl, callback) {
 /*
  * Expires the token (remove from redis)
  */
-exports.expireToken = function(headers, callback) {
+function expireToken(headers, callback) {
 	if (headers == null) callback(new Error('Headers are null'));
 	// Get token
 	try {
@@ -65,9 +66,21 @@ exports.expireToken = function(headers, callback) {
 
 		if (token == null) callback(new Error('Token is null'));
 
-		redisHelper.expireToken(token, callback);
+		authHelper.expireToken(token, callback);
 	} catch (err) {
 		console.log(err);
 		return callback(err);
+	}
+}
+
+module.exports = function (options){
+	var options = options || {};
+
+	authHelper = require( config[options.dataStore] || config['MONGO']);
+
+	return {
+		verify : verify,
+		createAndStoreToken: createAndStoreToken,
+		expireToken: expireToken
 	}
 }
