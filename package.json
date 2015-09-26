@@ -1,5 +1,5 @@
 {
-  "name": "jio-redis-auth",
+  "name": "jio-node-auth",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
