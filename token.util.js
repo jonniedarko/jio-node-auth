@@ -29,8 +29,6 @@ exports.extractTokenFromHeader = function(headers) {
 	if (headers.authorization == null) throw new Error('Authorization header is null');
 
 	var authorization = headers.authorization;
-	//var authArr = authorization.split(' ');
-	//if (authArr.length != 2) throw new Error('Authorization header value is not of length 2');
 
 	// retrieve token
 	var token = authorization;//authArr[1];

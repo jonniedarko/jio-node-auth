@@ -18,6 +18,31 @@ function getDateFromTTL(ttl) {
 	date.setSeconds(date.getSeconds() + ttl);
 	return date;
 }
+
+exports.isTokenValid = function(token, callback){
+	MongoClient.connect(MONGO_URL, function (err, db){
+		if (err) {
+			console.log('isNotExpired Error:', err);
+			callback(err);
+		}
+		var sessionStore = db.collection('SESSION_STORE');
+		sessionStore.findOne({"token":token}, function (err, result){
+			if(!result || new Date(result.expireAt) > Date.now()){
+				callback(null, false);
+			} else {
+				callback(null, true);
+			}
+
+
+
+
+
+		});
+
+
+	});
+}
+
 /*
  * Stores a token with user data for a ttl period of time
  * token: String - Token used as the key in redis
@@ -78,7 +103,7 @@ exports.getDataByToken = function (token, callback) {
 		sessionStore.findOne({"token": token}, function (err, result) {
 			if (err) callback(err);
 			
-			if (result.token_data != null) callback(null, JSON.parse(result.token_data));
+			if (!result || result.token_data != null) callback(null, JSON.parse(result.token_data));
 			else callback(new Error('Token Not Found'));
 		});
 		
@@ -86,8 +111,8 @@ exports.getDataByToken = function (token, callback) {
 }
 
 /*
- * Expires a token by deleting the entry in redis
- * callback(null, true) if successfuly deleted
+ * Expires a token by deleting the entry in mongo
+ * callback(null, true) if successfully deleted
  */
 exports.expireToken = function (token, callback) {
 	if (token == null) callback(new Error('Token is null'));

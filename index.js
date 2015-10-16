@@ -17,15 +17,24 @@ function verify(req, res, next) {
 		console.log(err);
 		return res.send(401);
 	}
+	authHelper.isTokenValid(token, function (err, isValid){
+		if(err || !isValid){
+			return res.send(401);
+		}
+		else {
+			//Verify it in redis, set data in req._user
+			authHelper.getDataByToken(token, function (err, data) {
+				debugger;
+				if (err) return res.send(401);
 
-	//Verify it in redis, set data in req._user
-	authHelper.getDataByToken(token, function(err, data) {
-		if (err) return res.send(401);
+				req._user = data;
 
-		req._user = data;
-
-		next();
+				next();
+			});
+		}
 	});
+
+
 };
 
 /*
@@ -81,6 +90,8 @@ module.exports = function (options){
 	return {
 		verify : verify,
 		createAndStoreToken: createAndStoreToken,
-		expireToken: expireToken
+		expireToken: expireToken,
+		isTokenValid: authHelper.isTokenValid,
+		extractTokenFromHeader: tokenHelper.extractTokenFromHeader
 	}
 }
