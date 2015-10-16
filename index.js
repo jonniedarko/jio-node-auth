@@ -24,7 +24,6 @@ function verify(req, res, next) {
 		else {
 			//Verify it in redis, set data in req._user
 			authHelper.getDataByToken(token, function (err, data) {
-				debugger;
 				if (err) return res.send(401);
 
 				req._user = data;
@@ -33,8 +32,6 @@ function verify(req, res, next) {
 			});
 		}
 	});
-
-
 };
 
 /*

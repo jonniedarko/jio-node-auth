@@ -2,17 +2,16 @@ var MongoClient = require('mongodb').MongoClient;
 var MONGO_URL = process.env.MONGO || 'mongodb://localhost:27017/session-store';
 
 MongoClient.connect(MONGO_URL, function (err, db) {
-	
+
 	if (err) {
 		console.log('MongoClient.connect Error:', err);
 		callback(err)
 	}
 	var sessionStore = db.collection('SESSION_STORE');
 	sessionStore.createIndex({"expireAt": 1}, {expireAfterSeconds: 0})
-	
-	
-});
 
+
+});
 function getDateFromTTL(ttl) {
 	var date = new Date();
 	date.setSeconds(date.getSeconds() + ttl);
@@ -27,19 +26,12 @@ exports.isTokenValid = function(token, callback){
 		}
 		var sessionStore = db.collection('SESSION_STORE');
 		sessionStore.findOne({"token":token}, function (err, result){
-			if(!result || new Date(result.expireAt) > Date.now()){
+			if(!result || new Date(result.expireAt) < Date.now()){
 				callback(null, false);
 			} else {
 				callback(null, true);
 			}
-
-
-
-
-
 		});
-
-
 	});
 }
 
@@ -51,19 +43,19 @@ exports.isTokenValid = function(token, callback){
  * callback: Function
  */
 exports.setTokenWithData = function (token, data, ttl, callback) {
-	
+
 	if (token == null) throw new Error('Token is null');
 	if (data != null && typeof data !== 'object') throw new Error('data is not an Object');
-	
+
 	var userData = data || {};
 	userData._ts = new Date();
-	
+
 	var timeToLive = ttl || auth.TIME_TO_LIVE;
 	if (timeToLive != null && typeof timeToLive !== 'number') throw new Error('TimeToLive is not a Number');
-	
-	
+
+
 	MongoClient.connect(MONGO_URL, function (err, db) {
-		
+
 		if (err) {
 			console.log('setTokenWithData Error:', err);
 			callback(err)
@@ -81,7 +73,7 @@ exports.setTokenWithData = function (token, data, ttl, callback) {
 				callback(new Error('Token not set in redis'));
 			}
 		});
-		
+
 	});
 };
 
@@ -92,9 +84,9 @@ exports.setTokenWithData = function (token, data, ttl, callback) {
  */
 exports.getDataByToken = function (token, callback) {
 	if (token == null) callback(new Error('Token is null'));
-	
+
 	MongoClient.connect(MONGO_URL, function (err, db) {
-		
+
 		if (err) {
 			console.log('getDataByToken Error:', err);
 			callback(err)
@@ -102,11 +94,11 @@ exports.getDataByToken = function (token, callback) {
 		var sessionStore = db.collection('SESSION_STORE');
 		sessionStore.findOne({"token": token}, function (err, result) {
 			if (err) callback(err);
-			
+
 			if (!result || result.token_data != null) callback(null, JSON.parse(result.token_data));
 			else callback(new Error('Token Not Found'));
 		});
-		
+
 	});
 }
 
@@ -116,9 +108,9 @@ exports.getDataByToken = function (token, callback) {
  */
 exports.expireToken = function (token, callback) {
 	if (token == null) callback(new Error('Token is null'));
-	
+
 	MongoClient.connect(MONGO_URL, function (err, db) {
-		
+
 		if (err) {
 			console.log('expireToken Error:', err);
 			callback(err);
@@ -126,11 +118,10 @@ exports.expireToken = function (token, callback) {
 		var sessionStore = db.collection('SESSION_STORE');
 		sessionStore.remove({"token": token}, function (err, results) {
 			if (err) callback(err);
-			
+
 			if (results) callback(null, true);
 			else callback(new Error('Token Not Found'));
 		});
-		
+
 	});
 }
-	
